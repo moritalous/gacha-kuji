@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#d4302b" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='8' width='24' height='20' rx='3' fill='%23d4302b'/%3E%3Cellipse cx='16' cy='8' rx='7' ry='2.5' fill='%233a1f1c'/%3E%3Crect x='12' y='2' width='8' height='8' rx='1' fill='%23fff6e5' transform='rotate(12 16 6)'/%3E%3C/svg%3E" />
+    <title>くじ引き</title>
+  </head>
+  <body>
+    <main id="app" class="app" data-step="start">
+      <header class="header">
+        <h1 id="title">くじ引き</h1>
+        <ol class="steps" aria-label="手順">
+          <li data-for="shake"><b>1</b>振る</li>
+          <li data-for="flip"><b>2</b>出す</li>
+          <li data-for="scratch"><b>3</b>めくる</li>
+        </ol>
+      </header>
+
+      <section class="stage" aria-live="polite">
+        <div class="box-wrap">
+          <button type="button" class="box" id="box" aria-label="くじ箱（タップでも混ぜられます）">
+            <span class="box-top">
+              <span class="hole">
+                <span class="peek p1"></span>
+                <span class="peek p2"></span>
+                <span class="peek p3"></span>
+              </span>
+            </span>
+            <span class="box-front">
+              <span class="box-badge">くじ</span>
+            </span>
+          </button>
+          <span class="ticket" id="ticket" aria-hidden="true"></span>
+          <span class="flip-hint" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="48" height="48">
+              <path d="M38 24a14 14 0 1 1-4.1-9.9" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+              <path d="M36 6v10H26" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </div>
+
+        <div class="card" id="card">
+          <div class="card-paper" id="card-paper">
+            <p class="card-note" id="card-note"></p>
+            <p class="card-label" id="card-label"></p>
+          </div>
+          <canvas class="scratch" id="scratch" aria-label="こすってめくるくじ"></canvas>
+        </div>
+        <div class="confetti" id="confetti" aria-hidden="true"></div>
+      </section>
+
+      <section class="panel">
+        <p class="message" id="message">箱の中からくじを 1 枚ひきます</p>
+        <p class="sub" id="sub">振る → 逆さにする → こする</p>
+        <div class="gauge" id="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="gauge-bar"></span>
+        </div>
+        <button type="button" class="btn primary" id="start">くじを引く</button>
+        <button type="button" class="btn primary" id="again">もう一回ひく</button>
+        <button type="button" class="btn ghost" id="fallback"></button>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
