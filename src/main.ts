@@ -38,7 +38,7 @@ const cardLabel = $("card-label");
 const canvas = $<HTMLCanvasElement>("scratch");
 const confetti = $("confetti");
 const ticket = $("ticket");
-const boxWrap = $("box-wrap");
+const spout = $("spout");
 const muteBtn = $<HTMLButtonElement>("mute");
 
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -135,7 +135,7 @@ function addShake(): void {
   }
 }
 
-const SHOUTS = ["シャカ", "シャカッ", "ガサッ", "ガサガサ", "シャカシャカ"];
+const SHOUTS = ["シャカ", "シャカッ", "ガサッ", "ガサガサ"];
 
 /** 穴からくじが跳ねて、また落ちていく飾りを出します。 */
 function tossPapers(): void {
@@ -150,7 +150,7 @@ function tossPapers(): void {
     bit.style.setProperty("--rot", `${Math.round(Math.random() * 540 - 270)}deg`);
     bit.style.setProperty("--dur", `${(0.45 + Math.random() * 0.2).toFixed(2)}s`);
     bit.addEventListener("animationend", () => bit.remove());
-    boxWrap.append(bit);
+    spout.append(bit);
   }
 }
 
@@ -166,7 +166,7 @@ function shout(n: number): void {
   word.style.setProperty("--y", `${5 + Math.random() * 30}%`);
   word.style.setProperty("--rot", `${left ? -14 : 14}deg`);
   word.addEventListener("animationend", () => word.remove());
-  boxWrap.append(word);
+  $("box-wrap").append(word);
 }
 
 // ---- 2. 逆さにして出す ----

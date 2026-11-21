@@ -33,7 +33,10 @@
               <span class="box-badge">くじ</span>
             </span>
           </button>
-          <span class="ticket" id="ticket" aria-hidden="true"></span>
+          <!-- 穴の中心より下を切り取った枠。くじはこの中を下から上がってくるので、穴から出てくるように見える -->
+          <span class="spout" id="spout" aria-hidden="true">
+            <span class="ticket" id="ticket"></span>
+          </span>
           <span class="flip-hint" aria-hidden="true">
             <svg viewBox="0 0 48 48" width="48" height="48">
               <path d="M38 24a14 14 0 1 1-4.1-9.9" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" />

@@ -89,6 +89,8 @@ button {
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 12px;
+  /* 擬音などの飾りが画面の横にはみ出しても、横スクロールさせない */
+  overflow-x: clip;
   /* こする操作や長押しで、文字が選択されたりメニューが出たりしないようにする */
   user-select: none;
   -webkit-user-select: none;
@@ -392,24 +394,36 @@ button {
   animation-delay: -0.4s;
 }
 
+/*
+ * 箱の手前に重ねる「穴から上」の領域。下端を穴の中心の高さに合わせ、はみ出した部分は隠す。
+ * 箱の上面は box-wrap の上から 0.05w の位置で始まり、高さは 0.28w なので、穴の中心は 0.19w。
+ */
+.spout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--w) * -0.9);
+  height: calc(var(--w) * 1.1);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .ticket {
   --tint: #d4302b;
   position: absolute;
   left: 50%;
-  top: calc(var(--w) * 0.06);
-  width: calc(var(--w) * 0.24);
-  height: calc(var(--w) * 0.32);
-  margin-left: calc(var(--w) * -0.12);
+  bottom: 0;
+  width: calc(var(--w) * 0.22);
+  height: calc(var(--w) * 0.3);
+  margin-left: calc(var(--w) * -0.11);
   background:
     linear-gradient(90deg, transparent 48%, rgb(0 0 0 / 0.08) 50%, transparent 52%),
     linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--tint) 12%, var(--paper)));
   border-radius: 3px;
   border-top: 5px solid var(--tint);
   box-shadow: 0 6px 12px rgb(0 0 0 / 0.25);
-  opacity: 0;
-  pointer-events: none;
-  /* 箱の上面の後ろから出てくるように、箱より奥に置く */
-  z-index: 0;
+  transform: translateY(105%);
 }
 
 .ticket.is-dropping {
@@ -417,13 +431,12 @@ button {
 }
 
 @keyframes emerge {
-  0% {
-    opacity: 1;
-    transform: translateY(40%) rotate(0deg) scale(0.7);
+  from {
+    transform: translateY(105%) rotate(0deg);
   }
-  100% {
-    opacity: 1;
-    transform: translateY(-78%) rotate(-8deg) scale(1);
+  to {
+    /* 下の 3 割ほどは穴の中に残したまま、少し傾けて止める */
+    transform: translateY(30%) rotate(-6deg);
   }
 }
 
@@ -432,7 +445,7 @@ button {
   --tint: #d4302b;
   position: absolute;
   left: 50%;
-  top: calc(var(--w) * 0.14);
+  bottom: 0;
   width: 16px;
   height: 22px;
   margin-left: -8px;
@@ -440,20 +453,20 @@ button {
   border-top: 4px solid var(--tint);
   border-radius: 2px;
   box-shadow: 0 2px 4px rgb(0 0 0 / 0.2);
-  z-index: 0;
   pointer-events: none;
   animation: toss var(--dur) cubic-bezier(0.3, 0.6, 0.6, 1) both;
 }
 
 @keyframes toss {
   0% {
-    transform: translate(0, 10px) rotate(0deg);
+    transform: translate(0, 110%) rotate(0deg);
   }
   45% {
-    transform: translate(calc(var(--dx) * 0.6), calc(var(--up) * -1)) rotate(calc(var(--rot) * 0.6));
+    transform: translate(calc(var(--dx) * 0.5), calc(var(--up) * -1)) rotate(calc(var(--rot) * 0.6));
   }
+  /* 穴の中へ落ちて戻る */
   100% {
-    transform: translate(var(--dx), 14px) rotate(var(--rot));
+    transform: translate(calc(var(--dx) * 0.2), 120%) rotate(var(--rot));
   }
 }
 
