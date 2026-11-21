@@ -37,6 +37,11 @@ export const PRIZES = [
 - 振動（`navigator.vibrate`）は Android のみで、iOS Safari では振動しません。
 - 効果音は Web Audio で鳴らしています。画面右上の「音」ボタンでオン／オフを切り替えられます。iPhone はマナーモード中だと鳴らないことがあるようです。
 
+## OGP（共有時のサムネイル）
+
+`index.html` に OGP のメタタグがあり、画像は `public/ogp.png`（1200×630）です。
+リポジトリ名やユーザー名を変えて公開する場合は、`og:url` と `og:image` の URL も書き換えてください（絶対 URL でないとサムネイルを表示しないサービスがあるため）。
+
 ## 開発
 
 Node.js 22 以上が必要です。
@@ -60,4 +65,5 @@ src/scratch.ts    こすってめくるカード
 src/draw.ts       重み付き抽選（crypto.getRandomValues）
 src/sound.ts      効果音（Web Audio、音声ファイルなし）
 src/prizes.ts     くじの中身とタイトル
+public/ogp.png    OGP 画像
 ```
