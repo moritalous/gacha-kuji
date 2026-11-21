@@ -31,6 +31,9 @@ export class ScratchCard {
   readonly #opts: Required<Omit<ScratchOptions, "onProgress" | "onScratch" | "onDone">> &
     ScratchOptions;
   #last: { x: number; y: number } | null = null;
+  /** 膜を描いたときの大きさ（CSS ピクセル）。描画はこの座標系で行う */
+  #w = 1;
+  #h = 1;
   #moves = 0;
   #done = false;
   readonly #abort = new AbortController();
@@ -61,17 +64,20 @@ export class ScratchCard {
 
   #paint(): void {
     const canvas = this.#canvas;
-    const rect = canvas.getBoundingClientRect();
+    // getBoundingClientRect は CSS の transform（表示アニメーションの拡大縮小）の影響を受けるため、
+    // レイアウト上の大きさ（clientWidth / clientHeight）を使う
+    const w = Math.max(1, canvas.clientWidth);
+    const h = Math.max(1, canvas.clientHeight);
+    this.#w = w;
+    this.#h = h;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.max(1, Math.round(rect.width * dpr));
-    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
     canvas.classList.remove("is-cleared");
     const ctx = this.#ctx;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalCompositeOperation = "source-over";
 
-    const w = rect.width;
-    const h = rect.height;
     const grad = ctx.createLinearGradient(0, 0, w, h);
     grad.addColorStop(0, "#c9ced6");
     grad.addColorStop(0.45, "#eef1f5");
@@ -104,9 +110,14 @@ export class ScratchCard {
   #bind(): void {
     const canvas = this.#canvas;
     const signal = this.#abort.signal;
+    // 画面上の座標を、膜を描いたときの座標系に変換する。
+    // アニメーション中や画面回転で表示サイズが変わっても、指の位置と削れる位置がずれない
     const point = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      return {
+        x: ((e.clientX - rect.left) / Math.max(1, rect.width)) * this.#w,
+        y: ((e.clientY - rect.top) / Math.max(1, rect.height)) * this.#h,
+      };
     };
     canvas.addEventListener(
       "pointerdown",
