@@ -28,13 +28,13 @@ jobs:
       - name: Build
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
-        if: github.ref_name == github.event.repository.default_branch
+        if: github.ref_name == 'main'
         with:
           path: dist
 
   deploy:
-    # 公開するのはデフォルトブランチだけ。ほかのブランチはテストとビルドの確認のみ
-    if: github.ref_name == github.event.repository.default_branch
+    # 公開するのは main だけ。ほかのブランチはテストとビルドの確認のみ
+    if: github.ref_name == 'main'
     needs: build
     runs-on: ubuntu-latest
     environment:

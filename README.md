@@ -24,9 +24,9 @@ export const PRIZES = [
 ## 公開（GitHub Pages）
 
 1. リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** にします。
-2. デフォルトブランチに push すると `.github/workflows/deploy.yml` が動き、`https://<user>.github.io/gacha-kuji/` に公開されます。
+2. `main` に push すると `.github/workflows/deploy.yml` が動き、`https://<user>.github.io/gacha-kuji/` に公開されます。
 
-デフォルトブランチ以外への push では、テストとビルドだけを実行します。
+`main` 以外への push では、テストとビルドだけを実行します。
 
 ## 端末ごとの注意
 
