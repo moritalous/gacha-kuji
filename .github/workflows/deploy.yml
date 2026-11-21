@@ -1,7 +1,9 @@
 name: Deploy to GitHub Pages
 
 on:
+  # main にマージ（push）したときだけ公開する
   push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -24,13 +26,10 @@ jobs:
       - name: Build
         run: npm run build
       - uses: actions/upload-pages-artifact@v3
-        if: github.ref_name == 'main'
         with:
           path: dist
 
   deploy:
-    # 公開するのは main だけ。ほかのブランチはテストとビルドの確認のみ
-    if: github.ref_name == 'main'
     needs: build
     runs-on: ubuntu-latest
     # 公開だけは同時に走らないようにする（ビルドは並行してよい）

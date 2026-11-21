@@ -12,7 +12,10 @@ import {
   type Vec3,
 } from "./sensors.ts";
 
-type Step = "start" | "shake" | "mixed" | "flip" | "drop" | "scratch" | "result";
+type Step = "start" | "shake" | "mixed" | "flip" | "drop" | "pick" | "chosen" | "scratch" | "result";
+
+/** 逆さにしたときに出てくるくじの枚数 */
+const CHOICES = 3;
 
 /** 何回振ったら混ざったことにするか */
 const SHAKES_NEEDED = 10;
@@ -37,8 +40,11 @@ const cardNote = $("card-note");
 const cardLabel = $("card-label");
 const canvas = $<HTMLCanvasElement>("scratch");
 const confetti = $("confetti");
-const ticket = $("ticket");
 const spout = $("spout");
+const tickets = Array.from(spout.querySelectorAll<HTMLElement>(".ticket"));
+const picks = $("picks");
+const pickBtns = Array.from(picks.querySelectorAll<HTMLButtonElement>(".pick"));
+const others = $("others");
 const muteBtn = $<HTMLButtonElement>("mute");
 
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -57,6 +63,9 @@ let lastGravity: Vec3 | null = null;
 let dropTimer = 0;
 let scratch: ScratchCard | null = null;
 let prize: Prize | null = null;
+/** 出てきた 3 枚の中身。選んだ 1 枚が結果になり、残りは最後に見せる */
+let candidates: Prize[] = [];
+let chosenIndex = -1;
 let stopMotion: (() => void) | null = null;
 
 function setStep(next: Step): void {
@@ -95,7 +104,7 @@ function onMotion(g: Vec3, t: number): void {
   } else if (step === "flip" && flipDetector.push(g, t)) {
     dropTicket(true);
   } else if (step === "drop" && uprightDetector?.push(g, t)) {
-    goScratch();
+    goPick();
   }
 }
 
@@ -107,6 +116,15 @@ function goShake(): void {
   setGauge(0);
   card.classList.remove("is-shown");
   confetti.replaceChildren();
+  others.replaceChildren();
+  for (const btn of pickBtns) {
+    btn.classList.remove("is-chosen", "is-dim");
+    btn.disabled = false;
+  }
+  for (const t of tickets) t.classList.remove("is-dropping");
+  prize = null;
+  candidates = [];
+  chosenIndex = -1;
   scratch?.destroy();
   scratch = null;
   if (sensorAlive) {
@@ -193,40 +211,67 @@ function goFlip(): void {
 
 function dropTicket(bySensor = false): void {
   if (step !== "flip") return;
-  // くじはこの瞬間に決まる
-  const index = pickIndex(PRIZES);
-  prize = PRIZES[index] ?? null;
+  // 3 枚の中身はこの瞬間に決まる。1 枚ずつ独立に抽選するので、どれを選んでも確率は同じ
+  candidates = Array.from({ length: CHOICES }, () => PRIZES[pickIndex(PRIZES)]).filter(
+    (p): p is Prize => p !== undefined,
+  );
   setStep("drop");
   setFallback(null);
-  if (prize !== null) ticket.style.setProperty("--tint", prize.color);
   // 画面の中の箱は回さない。スマホを逆さにしていれば、画面上の「上」が実際の「下」になるので、
   // くじが穴から画面の上へ出ていく動きが、そのまま「落ちてくる」ように見える
-  replay(ticket, "is-dropping");
+  for (const t of tickets) replay(t, "is-dropping");
   sound.pop();
-  buzz([30, 60, 30]);
+  window.setTimeout(sound.pop, 120);
+  window.setTimeout(sound.pop, 240);
+  buzz([30, 40, 30, 40, 30]);
 
   window.clearTimeout(dropTimer);
   if (bySensor && lastGravity !== null) {
-    setText("くじが出てきました！", "スマホを元の向きに戻してください");
+    setText("くじが 3 枚出てきました！", "スマホを元の向きに戻してください");
     // 今の（逆さの）向きを基準にして、元に戻したら次へ進む
     uprightDetector = new FlipDetector(150, 1);
     uprightDetector.push(lastGravity, 0);
     // 戻したことを検知できなくても、しばらくしたら進める
-    dropTimer = window.setTimeout(goScratch, 4000);
+    dropTimer = window.setTimeout(goPick, 4000);
   } else {
     uprightDetector = null;
-    setText("くじが出てきました！");
-    dropTimer = window.setTimeout(goScratch, reducedMotion ? 200 : 1400);
+    setText("くじが 3 枚出てきました！");
+    dropTimer = window.setTimeout(goPick, reducedMotion ? 200 : 1400);
   }
 }
 
-// ---- 3. こすってめくる ----
-function goScratch(): void {
-  if (prize === null || step !== "drop") return;
+// ---- 3. 選ぶ ----
+function goPick(): void {
+  if (step !== "drop") return;
   window.clearTimeout(dropTimer);
   uprightDetector = null;
+  setStep("pick");
+  for (const t of tickets) t.classList.remove("is-dropping");
+  setText("どのくじにする？", "気になる 1 枚をタップしてください");
+}
+
+function choose(index: number): void {
+  if (step !== "pick") return;
+  const picked = candidates[index];
+  if (picked === undefined) return;
+  chosenIndex = index;
+  prize = picked;
+  setStep("chosen");
+  pickBtns.forEach((btn, i) => {
+    btn.disabled = true;
+    btn.classList.toggle("is-chosen", i === index);
+    btn.classList.toggle("is-dim", i !== index);
+  });
+  setText("このくじに決めた！");
+  sound.pop();
+  buzz(30);
+  window.setTimeout(goScratch, reducedMotion ? 100 : 650);
+}
+
+// ---- 4. こすってめくる ----
+function goScratch(): void {
+  if (prize === null || step !== "chosen") return;
   setStep("scratch");
-  ticket.classList.remove("is-dropping");
   cardNote.textContent = prize.note ?? "";
   cardLabel.textContent = prize.label;
   card.style.setProperty("--tint", prize.color);
@@ -264,6 +309,24 @@ function showResult(): void {
   if (prize.celebrate) sound.fanfare();
   else sound.plain();
   if (prize.celebrate && !reducedMotion) burst(prize.color);
+  showOthers();
+}
+
+/** 選ばなかったくじの中身を見せます。 */
+function showOthers(): void {
+  const rest = candidates.filter((_, i) => i !== chosenIndex);
+  if (rest.length === 0) return;
+  const head = document.createElement("span");
+  head.className = "others-head";
+  head.textContent = "ほかのくじは…";
+  const chips = rest.map((p) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.style.setProperty("--tint", p.color);
+    chip.textContent = p.label;
+    return chip;
+  });
+  others.replaceChildren(head, ...chips);
 }
 
 function burst(color: string): void {
@@ -303,6 +366,10 @@ startBtn.addEventListener("click", async () => {
 
 box.addEventListener("click", () => {
   if (step === "shake") addShake();
+});
+
+pickBtns.forEach((btn, i) => {
+  btn.addEventListener("click", () => choose(i));
 });
 
 function renderMute(): void {

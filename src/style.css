@@ -134,14 +134,14 @@ button {
   margin: 0;
   padding: 0;
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 
 .steps li {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px 4px 4px;
+  gap: 5px;
+  padding: 4px 10px 4px 4px;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -168,6 +168,8 @@ button {
 [data-step="mixed"] .steps [data-for="shake"],
 [data-step="flip"] .steps [data-for="flip"],
 [data-step="drop"] .steps [data-for="flip"],
+[data-step="pick"] .steps [data-for="pick"],
+[data-step="chosen"] .steps [data-for="pick"],
 [data-step="scratch"] .steps [data-for="scratch"],
 [data-step="result"] .steps [data-for="scratch"] {
   background: var(--accent);
@@ -179,6 +181,8 @@ button {
 [data-step="mixed"] .steps [data-for="shake"] b,
 [data-step="flip"] .steps [data-for="flip"] b,
 [data-step="drop"] .steps [data-for="flip"] b,
+[data-step="pick"] .steps [data-for="pick"] b,
+[data-step="chosen"] .steps [data-for="pick"] b,
 [data-step="scratch"] .steps [data-for="scratch"] b,
 [data-step="result"] .steps [data-for="scratch"] b {
   background: var(--on-accent);
@@ -205,6 +209,8 @@ button {
     transform 0.3s;
 }
 
+[data-step="pick"] .box-wrap,
+[data-step="chosen"] .box-wrap,
 [data-step="scratch"] .box-wrap,
 [data-step="result"] .box-wrap {
   opacity: 0;
@@ -410,33 +416,35 @@ button {
 }
 
 .ticket {
-  --tint: #d4302b;
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: calc(var(--w) * 0.22);
-  height: calc(var(--w) * 0.3);
-  margin-left: calc(var(--w) * -0.11);
+  width: calc(var(--w) * 0.2);
+  height: calc(var(--w) * 0.28);
+  margin-left: calc(var(--w) * -0.1);
+  /* 中身がわからないよう、3 枚とも同じ見た目にする */
   background:
     linear-gradient(90deg, transparent 48%, rgb(0 0 0 / 0.08) 50%, transparent 52%),
-    linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--tint) 12%, var(--paper)));
+    var(--paper);
   border-radius: 3px;
-  border-top: 5px solid var(--tint);
+  border-top: 5px solid var(--accent);
   box-shadow: 0 6px 12px rgb(0 0 0 / 0.25);
   transform: translateY(105%);
 }
 
 .ticket.is-dropping {
   animation: emerge 0.9s cubic-bezier(0.25, 1.3, 0.5, 1) both;
+  animation-delay: calc(var(--i) * 0.12s);
 }
 
+/* 3 枚が扇形に広がって出てくる（--i は 0, 1, 2） */
 @keyframes emerge {
   from {
-    transform: translateY(105%) rotate(0deg);
+    transform: translate(0, 105%) rotate(0deg);
   }
   to {
-    /* 下の 3 割ほどは穴の中に残したまま、少し傾けて止める */
-    transform: translateY(30%) rotate(-6deg);
+    transform: translate(calc((var(--i) - 1) * var(--w) * 0.11), calc(25% - (1 - (var(--i) - 1) * (var(--i) - 1)) * 12%))
+      rotate(calc((var(--i) - 1) * 18deg));
   }
 }
 
@@ -587,6 +595,126 @@ button {
 .scratch.is-cleared {
   opacity: 0;
   pointer-events: none;
+}
+
+/* ---- 3 枚から選ぶ ---- */
+.picks {
+  position: absolute;
+  display: flex;
+  gap: clamp(10px, 4vw, 20px);
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+[data-step="pick"] .picks,
+[data-step="chosen"] .picks {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pick {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  width: min(27vw, 112px);
+  aspect-ratio: 3 / 4;
+  border-radius: 6px;
+  border-top: 8px solid var(--accent);
+  background:
+    linear-gradient(90deg, transparent 48%, rgb(0 0 0 / 0.08) 50%, transparent 52%),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 8px,
+      color-mix(in srgb, var(--accent) 6%, transparent) 8px 16px
+    ),
+    var(--paper);
+  box-shadow: 0 10px 18px -8px rgb(60 20 10 / 0.5);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transform: rotate(calc((var(--i) - 1) * 6deg));
+  transition:
+    transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1),
+    opacity 0.3s;
+}
+
+[data-step="pick"] .pick {
+  animation:
+    land 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both,
+    bob 1.8s ease-in-out infinite;
+  animation-delay:
+    calc(var(--i) * 0.08s),
+    calc(0.5s + var(--i) * 0.3s);
+}
+
+@keyframes land {
+  from {
+    opacity: 0;
+    transform: translateY(-60px) rotate(calc((var(--i) - 1) * 30deg)) scale(0.6);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(calc((var(--i) - 1) * 6deg));
+  }
+  50% {
+    transform: translateY(-6px) rotate(calc((var(--i) - 1) * 6deg));
+  }
+}
+
+.pick:active {
+  transform: scale(0.96) rotate(calc((var(--i) - 1) * 6deg));
+}
+
+.pick.is-chosen {
+  animation: none;
+  transform: translateY(-14px) scale(1.15) rotate(0deg);
+}
+
+.pick.is-dim {
+  animation: none;
+  opacity: 0.3;
+  transform: scale(0.88) rotate(calc((var(--i) - 1) * 6deg));
+}
+
+.pick:disabled {
+  cursor: default;
+}
+
+/* 結果画面の「ほかのくじは…」 */
+.others {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--fg-2);
+}
+
+[data-step="result"] .others:not(:empty) {
+  display: flex;
+  animation: fade-in 0.4s 0.6s both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--tint);
+  color: color-mix(in srgb, var(--tint) 75%, var(--fg));
+  font-weight: 700;
+  background: var(--surface);
 }
 
 /* ---- 紙吹雪 ---- */

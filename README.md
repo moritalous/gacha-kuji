@@ -5,10 +5,11 @@
 | ステップ | 操作 | 使っている仕組み |
 | --- | --- | --- |
 | 1. 振る | スマホを振ってくじを混ぜる（擬音・効果音・くじが跳ねる演出つき） | `devicemotion`（加速度の急な変化を数える） |
-| 2. 出す | スマホを上下逆さにして 1 枚出し、元の向きに戻す | `devicemotion`（重力の向きが反転したら判定） |
-| 3. めくる | 画面をこすって結果を見る | `<canvas>` と Pointer Events（スクラッチ） |
+| 2. 出す | スマホを上下逆さにしてくじを 3 枚出し、元の向きに戻す | `devicemotion`（重力の向きが反転したら判定） |
+| 3. 選ぶ | 3 枚から 1 枚をタップして選ぶ | 3 枚はそれぞれ独立に抽選。選ばなかったくじは結果画面で見せる |
+| 4. めくる | 画面をこすって結果を見る | `<canvas>` と Pointer Events（スクラッチ） |
 
-センサーが使えない端末（PC など）や、許可しなかった場合は、タップやボタンで同じ操作ができます。
+センサーが使えない端末（PC など）や、許可しなかった場合は、タップやボタンで同じ操作ができます。振る・出す・めくるの各工程には、スキップ用のボタンもあります。
 
 ## くじの中身を変える
 
@@ -24,9 +25,9 @@ export const PRIZES = [
 ## 公開（GitHub Pages）
 
 1. リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** にします。
-2. `main` に push すると `.github/workflows/deploy.yml` が動き、`https://<user>.github.io/gacha-kuji/` に公開されます。
+2. `main` に push（マージ）すると `.github/workflows/deploy.yml` が動き、テストとビルドのあと `https://<user>.github.io/gacha-kuji/` に公開されます。
 
-`main` 以外への push では、テストとビルドだけを実行します。
+`main` 以外のブランチへの push では、ワークフローは動きません。
 
 ## 端末ごとの注意
 
@@ -53,7 +54,7 @@ npm run build   # 型チェックと本番ビルド（dist/）
 
 ```
 index.html        画面の骨組み
-src/main.ts       画面の進行（振る → 出す → めくる → 結果）
+src/main.ts       画面の進行（振る → 出す → 選ぶ → めくる → 結果）
 src/sensors.ts    振る・逆さの検知、センサーの許可
 src/scratch.ts    こすってめくるカード
 src/draw.ts       重み付き抽選（crypto.getRandomValues）

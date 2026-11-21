@@ -15,7 +15,8 @@
         <ol class="steps" aria-label="手順">
           <li data-for="shake"><b>1</b>振る</li>
           <li data-for="flip"><b>2</b>出す</li>
-          <li data-for="scratch"><b>3</b>めくる</li>
+          <li data-for="pick"><b>3</b>選ぶ</li>
+          <li data-for="scratch"><b>4</b>めくる</li>
         </ol>
       </header>
 
@@ -35,7 +36,9 @@
           </button>
           <!-- 穴の中心より下を切り取った枠。くじはこの中を下から上がってくるので、穴から出てくるように見える -->
           <span class="spout" id="spout" aria-hidden="true">
-            <span class="ticket" id="ticket"></span>
+            <span class="ticket" style="--i: 0"></span>
+            <span class="ticket" style="--i: 1"></span>
+            <span class="ticket" style="--i: 2"></span>
           </span>
           <span class="flip-hint" aria-hidden="true">
             <svg viewBox="0 0 48 48" width="48" height="48">
@@ -43,6 +46,12 @@
               <path d="M36 6v10H26" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
+        </div>
+
+        <div class="picks" id="picks" role="group" aria-label="くじを 1 枚選ぶ">
+          <button type="button" class="pick" style="--i: 0" aria-label="左のくじ"></button>
+          <button type="button" class="pick" style="--i: 1" aria-label="まん中のくじ"></button>
+          <button type="button" class="pick" style="--i: 2" aria-label="右のくじ"></button>
         </div>
 
         <div class="card" id="card">
@@ -57,7 +66,8 @@
 
       <section class="panel">
         <p class="message" id="message">箱の中からくじを 1 枚ひきます</p>
-        <p class="sub" id="sub">振る → 逆さにする → こする</p>
+        <p class="sub" id="sub">振る → 逆さにする → 選ぶ → こする</p>
+        <div class="others" id="others" aria-live="polite"></div>
         <div class="gauge" id="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <span id="gauge-bar"></span>
         </div>
