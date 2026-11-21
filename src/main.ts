@@ -114,7 +114,17 @@ function goShake(): void {
   } else {
     setText("スマホを振って、くじを混ぜてね", "振っても反応しないときは、箱をタップしてください");
   }
+  setFallback("振らずに次へ進む");
+}
+
+/** 振る工程を飛ばして、混ぜ終わったことにします。 */
+function skipShake(): void {
+  if (step !== "shake") return;
+  setGauge(1);
   setFallback(null);
+  setStep("mixed");
+  setText("くじを混ぜました");
+  window.setTimeout(goFlip, 400);
 }
 
 function addShake(): void {
@@ -129,6 +139,7 @@ function addShake(): void {
   sound.rustle();
   buzz(18);
   if (shakes >= SHAKES_NEEDED) {
+    setFallback(null);
     setStep("mixed");
     setText("よく混ざりました！");
     window.setTimeout(goFlip, 700);
@@ -308,7 +319,8 @@ muteBtn.addEventListener("click", () => {
 renderMute();
 
 fallbackBtn.addEventListener("click", () => {
-  if (step === "flip") dropTicket();
+  if (step === "shake") skipShake();
+  else if (step === "flip") dropTicket();
   else if (step === "scratch") scratch?.reveal();
 });
 
