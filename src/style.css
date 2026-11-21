@@ -721,14 +721,34 @@ button {
 }
 
 .message {
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1.35;
   text-wrap: balance;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  /* 白い縁どりでポップに */
+  text-shadow:
+    2px 2px 0 #fff,
+    -2px -2px 0 #fff,
+    2px -2px 0 #fff,
+    -2px 2px 0 #fff,
+    0 4px 0 rgb(255 180 70 / 0.6);
+}
+
+.message.is-pop {
+  animation: message-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes message-pop {
+  from {
+    transform: scale(0.6) rotate(-4deg);
+    opacity: 0;
+  }
 }
 
 [data-step="result"] .message {
-  font-size: 1.6rem;
-  color: var(--accent);
+  font-size: 1.9rem;
 }
 
 .sub {

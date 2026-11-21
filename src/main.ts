@@ -88,8 +88,11 @@ function setStep(next: Step): void {
 }
 
 function setText(main: string, detail = ""): void {
+  const changed = message.textContent !== main;
   message.textContent = main;
   sub.textContent = detail;
+  // 文言が変わるたびに、ポンと弾ませる
+  if (changed && !reducedMotion) replay(message, "is-pop");
 }
 
 function setGauge(ratio: number): void {
@@ -141,11 +144,11 @@ function goShake(): void {
   scratch?.destroy();
   scratch = null;
   if (sensorAlive) {
-    setText("スマホを振って、くじを混ぜてね", "シャカシャカ振るとゲージがたまります");
+    setText("シャカシャカ〜！");
   } else {
-    setText("スマホを振って、くじを混ぜてね", "振っても反応しないときは、箱をタップしてください");
+    setText("シャカシャカ〜！", "振るか、箱をタップ！");
   }
-  setFallback("振らずに次へ進む");
+  setFallback("スキップ ▶");
 }
 
 /** 振る工程を飛ばして、混ぜ終わったことにします。 */
@@ -154,7 +157,7 @@ function skipShake(): void {
   setGauge(1);
   setFallback(null);
   setStep("mixed");
-  setText("くじを混ぜました");
+  setText("まざった〜！");
   window.setTimeout(goFlip, 400);
 }
 
@@ -172,7 +175,7 @@ function addShake(): void {
   if (shakes >= SHAKES_NEEDED) {
     setFallback(null);
     setStep("mixed");
-    setText("よく混ざりました！");
+    setText("まざった〜！");
     window.setTimeout(goFlip, 700);
   }
 }
@@ -215,11 +218,8 @@ function shout(n: number): void {
 function goFlip(): void {
   setStep("flip");
   flipDetector = new FlipDetector();
-  setText(
-    "スマホを逆さにして、くじを 1 枚出してね",
-    "画面の自動回転をオフにしておくと見やすいです",
-  );
-  setFallback("逆さにできないときはこちら");
+  setText("えいっ！ 逆さにしちゃえ！");
+  setFallback("スキップ ▶");
 }
 
 function dropTicket(bySensor = false): void {
@@ -244,7 +244,7 @@ function dropTicket(bySensor = false): void {
 
   window.clearTimeout(dropTimer);
   if (bySensor && lastGravity !== null) {
-    setText("くじが 3 枚出てきました！", "スマホを元の向きに戻してください");
+    setText("ポポポンッ！ 3 枚出た〜！", "もとに戻して〜");
     // 今の（逆さの）向きを基準にして、元に戻したら次へ進む
     uprightDetector = new FlipDetector(150, 1);
     uprightDetector.push(lastGravity, 0);
@@ -252,7 +252,7 @@ function dropTicket(bySensor = false): void {
     dropTimer = window.setTimeout(goPick, 4000);
   } else {
     uprightDetector = null;
-    setText("くじが 3 枚出てきました！");
+    setText("ポポポンッ！ 3 枚出た〜！");
     dropTimer = window.setTimeout(goPick, reducedMotion ? 200 : 1400);
   }
 }
@@ -264,7 +264,7 @@ function goPick(): void {
   uprightDetector = null;
   setStep("pick");
   for (const t of tickets) t.classList.remove("is-dropping");
-  setText("どのくじにする？", "気になる 1 枚をタップしてください");
+  setText("どれにする〜？");
 }
 
 function choose(index: number): void {
@@ -279,7 +279,7 @@ function choose(index: number): void {
     btn.classList.toggle("is-chosen", i === index);
     btn.classList.toggle("is-dim", i !== index);
   });
-  setText("このくじに決めた！");
+  setText("これに決めた！");
   sound.pop();
   buzz(30);
   window.setTimeout(goScratch, reducedMotion ? 100 : 650);
@@ -296,8 +296,8 @@ function goScratch(): void {
   card.style.setProperty("--tc", ticketColors[chosenIndex] ?? prize.color);
   card.classList.add("is-shown");
   setGauge(0);
-  setText("指でこすって、めくってね", "半分くらい削ると全部めくれます");
-  setFallback("まとめてめくる");
+  setText("ゴシゴシ〜！ めくっちゃえ！");
+  setFallback("いっきにめくる ▶");
 
   // カードの表示が終わってから膜を描く（大きさを正しく測るため）
   requestAnimationFrame(() => {
@@ -323,7 +323,8 @@ function showResult(): void {
   setStep("result");
   setFallback(null);
   setGauge(1);
-  setText(`${prize.label}！`, prize.note ?? "");
+  if (prize.celebrate) setText(`🎉 ${prize.label}！ 🎉`, "おめでとう〜！");
+  else setText(`${prize.label}…！`, prize.note ?? "");
   buzz(prize.celebrate ? [60, 40, 60, 40, 120] : 40);
   if (prize.celebrate) sound.fanfare();
   else sound.plain();
@@ -355,12 +356,12 @@ startBtn.addEventListener("click", async () => {
   startBtn.disabled = false;
   goShake();
   if (permission === "denied") {
-    setText("センサーが許可されなかったため、タップで進めます", "箱をタップしてくじを混ぜてください");
+    setText("シャカシャカ〜！", "箱をタップ！");
   }
   // PC などセンサーのない端末では、しばらく待っても値が来ない
   window.setTimeout(() => {
     if (!sensorAlive && step === "shake") {
-      setText("箱をタップして、くじを混ぜてね", "この端末ではモーションセンサーが使えないようです");
+      setText("シャカシャカ〜！", "箱をタップ！");
     }
   }, 1500);
 });

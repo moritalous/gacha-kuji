@@ -96,10 +96,10 @@ export class ScratchCard {
       }
     }
     ctx.fillStyle = "#7a818d";
-    ctx.font = `700 ${Math.round(Math.min(w, h) * 0.13)}px system-ui, sans-serif`;
+    ctx.font = `800 ${Math.round(Math.min(w, h) * 0.2)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("ここをこすってね", w / 2, h / 2);
+    ctx.fillText("ゴシゴシ！", w / 2, h / 2);
 
     ctx.globalCompositeOperation = "destination-out";
     ctx.lineCap = "round";
