@@ -1,6 +1,7 @@
 import "./style.css";
 import { cryptoRandomInt, pickIndex } from "./draw.ts";
-import { PRIZES, type Prize, TITLE } from "./prizes.ts";
+import { configFromHash } from "./config.ts";
+import type { Prize } from "./prizes.ts";
 import { ScratchCard } from "./scratch.ts";
 import * as sound from "./sound.ts";
 import {
@@ -61,8 +62,13 @@ const muteBtn = $<HTMLButtonElement>("mute");
 
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-document.title = TITLE;
-$("title").textContent = TITLE;
+// くじの中身は URL（#c=…）から読む。なければ src/prizes.ts の標準設定
+const { config } = configFromHash(window.location.hash);
+const PRIZES = config.prizes;
+// 同じタブで別の設定の URL を開いたとき（# 以降だけ変わる）は読み直す
+window.addEventListener("hashchange", () => window.location.reload());
+document.title = config.title;
+$("title").textContent = config.title;
 
 let step: Step = "start";
 let sensorAlive = false;

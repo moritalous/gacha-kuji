@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="light" />
+    <title>くじ引き 設定</title>
+  </head>
+  <body>
+    <div class="bunting" aria-hidden="true"></div>
+    <main class="admin">
+      <header class="admin-head">
+        <h1>くじの中身をつくる</h1>
+        <p>名前と割合を決めて、URL と QR コードを配るだけ。</p>
+      </header>
+
+      <section class="card-box">
+        <label class="field">
+          <span>タイトル</span>
+          <input id="title" type="text" maxlength="30" placeholder="くじ引き" />
+        </label>
+      </section>
+
+      <section class="card-box">
+        <div class="rows-head">
+          <h2>くじの種類</h2>
+          <span class="total" id="total"></span>
+        </div>
+        <div class="rows" id="rows"></div>
+        <div class="row-actions">
+          <button type="button" class="btn" id="add">＋ 種類を追加</button>
+          <button type="button" class="btn ghost" id="reset">標準に戻す</button>
+        </div>
+        <p class="hint">割合は「出やすさ」です。合計に対する比で確率が決まります（合計 100 にすると % で読めます）。<br />🎉 にチェックを入れると、出たときに紙吹雪とファンファーレが鳴ります。</p>
+      </section>
+
+      <ul class="errors" id="errors"></ul>
+
+      <button type="button" class="btn primary" id="issue">URL と QR コードをつくる</button>
+
+      <section class="card-box result" id="result" hidden>
+        <img id="qr" alt="くじ引きを開く QR コード" width="240" height="240" />
+        <textarea id="url" readonly rows="3" aria-label="くじ引きの URL"></textarea>
+        <div class="row-actions">
+          <button type="button" class="btn" id="copy">URL をコピー</button>
+          <a class="btn" id="open" target="_blank" rel="noopener">開いてみる</a>
+          <a class="btn" id="download" download="kuji-qr.png">QR を保存</a>
+        </div>
+        <p class="hint">設定は URL の中に入っています。サーバーには保存されません。URL を見れば割合はわかるので、厳密な管理には向きません。</p>
+      </section>
+
+      <details class="card-box">
+        <summary>前につくった URL から読み込む</summary>
+        <div class="load">
+          <input id="load-url" type="url" placeholder="https://…/gacha-kuji/#c=…" />
+          <button type="button" class="btn" id="load">読み込む</button>
+        </div>
+      </details>
+    </main>
+    <script type="module" src="/src/admin.ts"></script>
+  </body>
+</html>

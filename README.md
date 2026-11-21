@@ -13,14 +13,19 @@
 
 ## くじの中身を変える
 
-`src/prizes.ts` の `PRIZES` を編集して push してください。確率は `weight` の比で決まります。
+### 設定ページで変える（再デプロイ不要）
 
-```ts
-export const PRIZES = [
-  { label: "大当たり", note: "特賞", weight: 1, color: "#d4302b", celebrate: true },
-  { label: "はずれ", weight: 25, color: "#7d8591" },
-];
-```
+`https://<user>.github.io/gacha-kuji/admin.html` を開き、タイトル・くじの種類（名前・ひとこと・割合・色・🎉 演出）を入力して「URL と QR コードをつくる」を押します。
+発行された URL（または QR コード）を配れば、その中身でくじが引けます。
+
+- 設定は URL の `#c=…` に入っていて、サーバーには保存されません。イベントごとに別の URL を作れます。
+- 割合は「出やすさ」で、合計に対する比で確率が決まります。
+- URL を読み解けば割合はわかり、書き換えもできます。改ざん防止のチェックはしていないので、厳密な管理には向きません。
+- `#c=` がない URL や、読めない URL のときは、下の標準設定で動きます。
+
+### 標準設定を変える
+
+`src/prizes.ts` の `PRIZES` と `TITLE` を編集して `main` に push すると、`#c=` なしで開いたときの中身が変わります。
 
 ## 公開（GitHub Pages）
 
@@ -64,6 +69,8 @@ src/sensors.ts    振る・逆さの検知、センサーの許可
 src/scratch.ts    こすってめくるカード
 src/draw.ts       重み付き抽選（crypto.getRandomValues）
 src/sound.ts      効果音（Web Audio、音声ファイルなし）
-src/prizes.ts     くじの中身とタイトル
+src/prizes.ts     くじの中身とタイトル（標準設定）
+src/config.ts     URL（#c=…）への設定の書き出し・読み込み
+admin.html        設定ページ（src/admin.ts）
 public/ogp.png    OGP 画像
 ```
