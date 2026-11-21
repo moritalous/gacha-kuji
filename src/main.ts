@@ -1,5 +1,5 @@
 import "./style.css";
-import { pickIndex } from "./draw.ts";
+import { cryptoRandomInt, pickIndex } from "./draw.ts";
 import { PRIZES, type Prize, TITLE } from "./prizes.ts";
 import { ScratchCard } from "./scratch.ts";
 import * as sound from "./sound.ts";
@@ -16,6 +16,19 @@ type Step = "start" | "shake" | "mixed" | "flip" | "drop" | "pick" | "chosen" | 
 
 /** 逆さにしたときに出てくるくじの枚数 */
 const CHOICES = 3;
+
+/** 出てくる 3 枚のくじの色。箱（赤）と見分けやすいよう赤は使わない。中身とは関係ない飾り */
+const TICKET_COLORS = ["#2f7fd8", "#22a35a", "#f2b705"] as const;
+
+/** 配列を並べ替えたコピーを返します（Fisher–Yates）。 */
+function shuffled<T>(items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = cryptoRandomInt(i + 1);
+    [out[i], out[j]] = [out[j] as T, out[i] as T];
+  }
+  return out;
+}
 
 /** 何回振ったら混ざったことにするか */
 const SHAKES_NEEDED = 10;
@@ -44,7 +57,6 @@ const spout = $("spout");
 const tickets = Array.from(spout.querySelectorAll<HTMLElement>(".ticket"));
 const picks = $("picks");
 const pickBtns = Array.from(picks.querySelectorAll<HTMLButtonElement>(".pick"));
-const others = $("others");
 const muteBtn = $<HTMLButtonElement>("mute");
 
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -66,6 +78,8 @@ let prize: Prize | null = null;
 /** 出てきた 3 枚の中身。選んだ 1 枚が結果になり、残りは最後に見せる */
 let candidates: Prize[] = [];
 let chosenIndex = -1;
+/** 今回の 3 枚の色（毎回並びを変える） */
+let ticketColors: string[] = [...TICKET_COLORS];
 let stopMotion: (() => void) | null = null;
 
 function setStep(next: Step): void {
@@ -116,7 +130,6 @@ function goShake(): void {
   setGauge(0);
   card.classList.remove("is-shown");
   confetti.replaceChildren();
-  others.replaceChildren();
   for (const btn of pickBtns) {
     btn.classList.remove("is-chosen", "is-dim");
     btn.disabled = false;
@@ -215,6 +228,10 @@ function dropTicket(bySensor = false): void {
   candidates = Array.from({ length: CHOICES }, () => PRIZES[pickIndex(PRIZES)]).filter(
     (p): p is Prize => p !== undefined,
   );
+  // 色の並びは毎回ランダム
+  ticketColors = shuffled(TICKET_COLORS);
+  tickets.forEach((t, i) => t.style.setProperty("--tc", ticketColors[i] ?? TICKET_COLORS[0]));
+  pickBtns.forEach((b, i) => b.style.setProperty("--tc", ticketColors[i] ?? TICKET_COLORS[0]));
   setStep("drop");
   setFallback(null);
   // 画面の中の箱は回さない。スマホを逆さにしていれば、画面上の「上」が実際の「下」になるので、
@@ -275,6 +292,8 @@ function goScratch(): void {
   cardNote.textContent = prize.note ?? "";
   cardLabel.textContent = prize.label;
   card.style.setProperty("--tint", prize.color);
+  // カードの枠は選んだくじの色にする
+  card.style.setProperty("--tc", ticketColors[chosenIndex] ?? prize.color);
   card.classList.add("is-shown");
   setGauge(0);
   setText("指でこすって、めくってね", "半分くらい削ると全部めくれます");
@@ -309,24 +328,6 @@ function showResult(): void {
   if (prize.celebrate) sound.fanfare();
   else sound.plain();
   if (prize.celebrate && !reducedMotion) burst(prize.color);
-  showOthers();
-}
-
-/** 選ばなかったくじの中身を見せます。 */
-function showOthers(): void {
-  const rest = candidates.filter((_, i) => i !== chosenIndex);
-  if (rest.length === 0) return;
-  const head = document.createElement("span");
-  head.className = "others-head";
-  head.textContent = "ほかのくじは…";
-  const chips = rest.map((p) => {
-    const chip = document.createElement("span");
-    chip.className = "chip";
-    chip.style.setProperty("--tint", p.color);
-    chip.textContent = p.label;
-    return chip;
-  });
-  others.replaceChildren(head, ...chips);
 }
 
 function burst(color: string): void {
