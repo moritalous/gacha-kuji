@@ -2,6 +2,7 @@ import "./style.css";
 import { pickIndex } from "./draw.ts";
 import { PRIZES, type Prize, TITLE } from "./prizes.ts";
 import { ScratchCard } from "./scratch.ts";
+import * as sound from "./sound.ts";
 import {
   buzz,
   FlipDetector,
@@ -11,7 +12,7 @@ import {
   type Vec3,
 } from "./sensors.ts";
 
-type Step = "start" | "shake" | "flip" | "drop" | "scratch" | "result";
+type Step = "start" | "shake" | "mixed" | "flip" | "drop" | "scratch" | "result";
 
 /** 何回振ったら混ざったことにするか */
 const SHAKES_NEEDED = 10;
@@ -37,6 +38,8 @@ const cardLabel = $("card-label");
 const canvas = $<HTMLCanvasElement>("scratch");
 const confetti = $("confetti");
 const ticket = $("ticket");
+const boxWrap = $("box-wrap");
+const muteBtn = $<HTMLButtonElement>("mute");
 
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
@@ -48,6 +51,10 @@ let sensorAlive = false;
 let shakes = 0;
 let shakeDetector = new ShakeDetector();
 let flipDetector = new FlipDetector();
+/** くじが出た後、スマホを元の向きに戻したかを見る */
+let uprightDetector: FlipDetector | null = null;
+let lastGravity: Vec3 | null = null;
+let dropTimer = 0;
 let scratch: ScratchCard | null = null;
 let prize: Prize | null = null;
 let stopMotion: (() => void) | null = null;
@@ -82,10 +89,13 @@ function replay(el: HTMLElement, className: string): void {
 
 function onMotion(g: Vec3, t: number): void {
   sensorAlive = true;
+  lastGravity = g;
   if (step === "shake" && shakeDetector.push(g, t)) {
     addShake();
   } else if (step === "flip" && flipDetector.push(g, t)) {
-    dropTicket();
+    dropTicket(true);
+  } else if (step === "drop" && uprightDetector?.push(g, t)) {
+    goScratch();
   }
 }
 
@@ -112,12 +122,51 @@ function addShake(): void {
   shakes++;
   setGauge(shakes / SHAKES_NEEDED);
   replay(box, shakes % 2 === 0 ? "jolt-l" : "jolt-r");
+  if (!reducedMotion) {
+    tossPapers();
+    shout(shakes);
+  }
+  sound.rustle();
   buzz(18);
   if (shakes >= SHAKES_NEEDED) {
-    setStep("drop");
+    setStep("mixed");
     setText("よく混ざりました！");
-    window.setTimeout(goFlip, 500);
+    window.setTimeout(goFlip, 700);
   }
+}
+
+const SHOUTS = ["シャカ", "シャカッ", "ガサッ", "ガサガサ", "シャカシャカ"];
+
+/** 穴からくじが跳ねて、また落ちていく飾りを出します。 */
+function tossPapers(): void {
+  const count = 2 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < count; i++) {
+    const bit = document.createElement("span");
+    bit.className = "bit";
+    const color = PRIZES[Math.floor(Math.random() * PRIZES.length)]?.color ?? "#d4302b";
+    bit.style.setProperty("--tint", color);
+    bit.style.setProperty("--dx", `${Math.round(Math.random() * 120 - 60)}px`);
+    bit.style.setProperty("--up", `${Math.round(50 + Math.random() * 60)}px`);
+    bit.style.setProperty("--rot", `${Math.round(Math.random() * 540 - 270)}deg`);
+    bit.style.setProperty("--dur", `${(0.45 + Math.random() * 0.2).toFixed(2)}s`);
+    bit.addEventListener("animationend", () => bit.remove());
+    boxWrap.append(bit);
+  }
+}
+
+/** 「シャカ」などの擬音を箱のまわりに出します。 */
+function shout(n: number): void {
+  const word = document.createElement("span");
+  word.className = "shout";
+  word.textContent = SHOUTS[Math.floor(Math.random() * SHOUTS.length)] ?? "シャカ";
+  const left = n % 2 === 0;
+  // 箱の外側の左右に出す（箱の上に重なると読みにくいため）
+  word.style.setProperty("--x", left ? "auto" : `${92 + Math.random() * 6}%`);
+  word.style.setProperty("--rx", left ? `${92 + Math.random() * 6}%` : "auto");
+  word.style.setProperty("--y", `${5 + Math.random() * 30}%`);
+  word.style.setProperty("--rot", `${left ? -14 : 14}deg`);
+  word.addEventListener("animationend", () => word.remove());
+  boxWrap.append(word);
 }
 
 // ---- 2. 逆さにして出す ----
@@ -131,23 +180,40 @@ function goFlip(): void {
   setFallback("逆さにできないときはこちら");
 }
 
-function dropTicket(): void {
+function dropTicket(bySensor = false): void {
   if (step !== "flip") return;
   // くじはこの瞬間に決まる
   const index = pickIndex(PRIZES);
   prize = PRIZES[index] ?? null;
   setStep("drop");
   setFallback(null);
-  setText("ポトッ…", "くじが 1 枚出てきました");
   if (prize !== null) ticket.style.setProperty("--tint", prize.color);
+  // 画面の中の箱は回さない。スマホを逆さにしていれば、画面上の「上」が実際の「下」になるので、
+  // くじが穴から画面の上へ出ていく動きが、そのまま「落ちてくる」ように見える
   replay(ticket, "is-dropping");
+  sound.pop();
   buzz([30, 60, 30]);
-  window.setTimeout(goScratch, reducedMotion ? 200 : 1500);
+
+  window.clearTimeout(dropTimer);
+  if (bySensor && lastGravity !== null) {
+    setText("くじが出てきました！", "スマホを元の向きに戻してください");
+    // 今の（逆さの）向きを基準にして、元に戻したら次へ進む
+    uprightDetector = new FlipDetector(150, 1);
+    uprightDetector.push(lastGravity, 0);
+    // 戻したことを検知できなくても、しばらくしたら進める
+    dropTimer = window.setTimeout(goScratch, 4000);
+  } else {
+    uprightDetector = null;
+    setText("くじが出てきました！");
+    dropTimer = window.setTimeout(goScratch, reducedMotion ? 200 : 1400);
+  }
 }
 
 // ---- 3. こすってめくる ----
 function goScratch(): void {
-  if (prize === null) return;
+  if (prize === null || step !== "drop") return;
+  window.clearTimeout(dropTimer);
+  uprightDetector = null;
   setStep("scratch");
   ticket.classList.remove("is-dropping");
   cardNote.textContent = prize.note ?? "";
@@ -184,6 +250,8 @@ function showResult(): void {
   setGauge(1);
   setText(`${prize.label}！`, prize.note ?? "");
   buzz(prize.celebrate ? [60, 40, 60, 40, 120] : 40);
+  if (prize.celebrate) sound.fanfare();
+  else sound.plain();
   if (prize.celebrate && !reducedMotion) burst(prize.color);
 }
 
@@ -203,6 +271,7 @@ function burst(color: string): void {
 // ---- ボタン ----
 startBtn.addEventListener("click", async () => {
   startBtn.disabled = true;
+  sound.unlock();
   // iOS では、タップの処理の中で許可を求める必要がある
   const permission = await requestMotionPermission();
   // ブラウザによって許可の返し方がまちまちなので、結果に関係なく購読し、
@@ -225,11 +294,27 @@ box.addEventListener("click", () => {
   if (step === "shake") addShake();
 });
 
+function renderMute(): void {
+  const m = sound.isMuted();
+  muteBtn.textContent = m ? "音：オフ" : "音：オン";
+  muteBtn.setAttribute("aria-pressed", String(!m));
+}
+
+muteBtn.addEventListener("click", () => {
+  sound.unlock();
+  sound.setMuted(!sound.isMuted());
+  renderMute();
+});
+renderMute();
+
 fallbackBtn.addEventListener("click", () => {
   if (step === "flip") dropTicket();
   else if (step === "scratch") scratch?.reveal();
 });
 
-againBtn.addEventListener("click", goShake);
+againBtn.addEventListener("click", () => {
+  sound.unlock();
+  goShake();
+});
 
 setFallback(null);

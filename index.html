@@ -11,6 +11,7 @@
     <main id="app" class="app" data-step="start">
       <header class="header">
         <h1 id="title">くじ引き</h1>
+        <button type="button" class="mute" id="mute" aria-pressed="true">音：オン</button>
         <ol class="steps" aria-label="手順">
           <li data-for="shake"><b>1</b>振る</li>
           <li data-for="flip"><b>2</b>出す</li>
@@ -19,7 +20,7 @@
       </header>
 
       <section class="stage" aria-live="polite">
-        <div class="box-wrap">
+        <div class="box-wrap" id="box-wrap">
           <button type="button" class="box" id="box" aria-label="くじ箱（タップでも混ぜられます）">
             <span class="box-top">
               <span class="hole">

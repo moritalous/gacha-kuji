@@ -97,9 +97,29 @@ button {
 
 /* ---- ヘッダー ---- */
 .header {
+  position: relative;
   display: grid;
   gap: 10px;
   justify-items: center;
+}
+
+.mute {
+  position: absolute;
+  top: 0;
+  right: 0;
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg-2);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mute[aria-pressed="false"] {
+  color: var(--muted);
 }
 
 .header h1 {
@@ -143,6 +163,7 @@ button {
 }
 
 [data-step="shake"] .steps [data-for="shake"],
+[data-step="mixed"] .steps [data-for="shake"],
 [data-step="flip"] .steps [data-for="flip"],
 [data-step="drop"] .steps [data-for="flip"],
 [data-step="scratch"] .steps [data-for="scratch"],
@@ -153,6 +174,7 @@ button {
 }
 
 [data-step="shake"] .steps [data-for="shake"] b,
+[data-step="mixed"] .steps [data-for="shake"] b,
 [data-step="flip"] .steps [data-for="flip"] b,
 [data-step="drop"] .steps [data-for="flip"] b,
 [data-step="scratch"] .steps [data-for="scratch"] b,
@@ -199,6 +221,8 @@ button {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transform-origin: 50% 60%;
+  position: relative;
+  z-index: 1;
 }
 
 .box:disabled {
@@ -288,28 +312,40 @@ button {
 }
 
 .jolt-l {
-  animation: jolt-l 0.22s ease-out;
+  animation: jolt-l 0.32s ease-out;
 }
 
 .jolt-r {
-  animation: jolt-r 0.22s ease-out;
+  animation: jolt-r 0.32s ease-out;
 }
 
 @keyframes jolt-l {
-  30% {
-    transform: translate(-10px, -8px) rotate(-7deg);
+  20% {
+    transform: translate(-14px, -12px) rotate(-10deg);
+  }
+  55% {
+    transform: translate(6px, 2px) rotate(4deg);
+  }
+  80% {
+    transform: translate(-2px, 0) rotate(-1deg);
   }
 }
 
 @keyframes jolt-r {
-  30% {
-    transform: translate(10px, -8px) rotate(7deg);
+  20% {
+    transform: translate(14px, -12px) rotate(10deg);
+  }
+  55% {
+    transform: translate(-6px, 2px) rotate(-4deg);
+  }
+  80% {
+    transform: translate(2px, 0) rotate(1deg);
   }
 }
 
 .jolt-l .peek,
 .jolt-r .peek {
-  animation: rustle 0.22s ease-out;
+  animation: rustle 0.32s ease-out;
 }
 
 @keyframes rustle {
@@ -343,43 +379,27 @@ button {
   }
 }
 
-[data-step="flip"] .box {
-  animation: tilt 1.6s ease-in-out infinite;
+/* 逆さ待ちの間は、箱の穴のくじがそわそわ動く */
+[data-step="flip"] .peek {
+  animation: rustle 0.6s ease-in-out infinite alternate;
 }
 
-@keyframes tilt {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  50% {
-    transform: rotate(-16deg);
-  }
+[data-step="flip"] .p2 {
+  animation-delay: -0.2s;
 }
 
-/* 出てくるくじ（箱を逆さにして、穴から落ちる） */
-[data-step="drop"] .box {
-  animation: upend 1.4s cubic-bezier(0.5, 0, 0.3, 1) both;
-}
-
-@keyframes upend {
-  35%,
-  70% {
-    transform: translateY(-40%) rotate(180deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+[data-step="flip"] .p3 {
+  animation-delay: -0.4s;
 }
 
 .ticket {
   --tint: #d4302b;
   position: absolute;
   left: 50%;
-  top: 30%;
-  width: calc(var(--w) * 0.26);
-  height: calc(var(--w) * 0.34);
-  margin-left: calc(var(--w) * -0.13);
+  top: calc(var(--w) * 0.06);
+  width: calc(var(--w) * 0.24);
+  height: calc(var(--w) * 0.32);
+  margin-left: calc(var(--w) * -0.12);
   background:
     linear-gradient(90deg, transparent 48%, rgb(0 0 0 / 0.08) 50%, transparent 52%),
     linear-gradient(180deg, var(--paper), color-mix(in srgb, var(--tint) 12%, var(--paper)));
@@ -388,29 +408,87 @@ button {
   box-shadow: 0 6px 12px rgb(0 0 0 / 0.25);
   opacity: 0;
   pointer-events: none;
-  z-index: 2;
+  /* 箱の上面の後ろから出てくるように、箱より奥に置く */
+  z-index: 0;
 }
 
 .ticket.is-dropping {
-  animation: fall 1.4s cubic-bezier(0.4, 0, 0.6, 1) both;
+  animation: emerge 0.9s cubic-bezier(0.25, 1.3, 0.5, 1) both;
 }
 
-@keyframes fall {
-  0%,
-  38% {
-    opacity: 0;
-    transform: translateY(-60%) rotate(0deg) scale(0.6);
-  }
-  45% {
+@keyframes emerge {
+  0% {
     opacity: 1;
-  }
-  75% {
-    opacity: 1;
-    transform: translateY(150%) rotate(-12deg) scale(1);
+    transform: translateY(40%) rotate(0deg) scale(0.7);
   }
   100% {
     opacity: 1;
-    transform: translateY(130%) rotate(-6deg) scale(1.15);
+    transform: translateY(-78%) rotate(-8deg) scale(1);
+  }
+}
+
+/* 振ったときに穴から跳ねるくじ */
+.bit {
+  --tint: #d4302b;
+  position: absolute;
+  left: 50%;
+  top: calc(var(--w) * 0.14);
+  width: 16px;
+  height: 22px;
+  margin-left: -8px;
+  background: var(--paper);
+  border-top: 4px solid var(--tint);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.2);
+  z-index: 0;
+  pointer-events: none;
+  animation: toss var(--dur) cubic-bezier(0.3, 0.6, 0.6, 1) both;
+}
+
+@keyframes toss {
+  0% {
+    transform: translate(0, 10px) rotate(0deg);
+  }
+  45% {
+    transform: translate(calc(var(--dx) * 0.6), calc(var(--up) * -1)) rotate(calc(var(--rot) * 0.6));
+  }
+  100% {
+    transform: translate(var(--dx), 14px) rotate(var(--rot));
+  }
+}
+
+/* 擬音 */
+.shout {
+  position: absolute;
+  left: var(--x);
+  right: var(--rx);
+  top: var(--y);
+  z-index: 3;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--accent);
+  white-space: nowrap;
+  text-shadow:
+    2px 2px 0 var(--surface),
+    -2px -2px 0 var(--surface),
+    2px -2px 0 var(--surface),
+    -2px 2px 0 var(--surface);
+  pointer-events: none;
+  animation: shout 0.6s ease-out both;
+}
+
+@keyframes shout {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(var(--rot));
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.15) rotate(var(--rot));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1) rotate(var(--rot));
   }
 }
 
@@ -564,6 +642,7 @@ button {
 }
 
 [data-step="shake"] .gauge,
+[data-step="mixed"] .gauge,
 [data-step="scratch"] .gauge {
   visibility: visible;
 }
